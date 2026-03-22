@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PayFlow — Arc Testnet</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0e0f;--surface:#111518;--surface2:#161b1e;--surface3:#1c2226;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --text:#f0f4f5;--muted:#6b7a82;
+  --mint:#c8f5e0;--mint2:#7ee8c0;--mint-dim:rgba(200,245,224,0.07);--mint-dim2:rgba(200,245,224,0.14);
+  --orange:#ff6b35;--orange-dim:rgba(255,107,53,0.1);
+  --blue:#4da6ff;--blue-dim:rgba(77,166,255,0.1);
+  --font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;font-size:14px}
+.bg-grid{position:fixed;inset:0;background-image:linear-gradient(rgba(200,245,224,0.018) 1px,transparent 1px),linear-gradient(90deg,rgba(200,245,224,0.018) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0}
+.bg-glow{position:fixed;top:-20%;right:-10%;width:600px;height:600px;background:radial-gradient(circle,rgba(200,245,224,0.04) 0%,transparent 70%);pointer-events:none;z-index:0;animation:gp 8s ease-in-out infinite}
+@keyframes gp{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.1)}}
+.shell{position:relative;z-index:1;display:grid;grid-template-columns:230px 1fr;min-height:100vh}
+
+/* SIDEBAR */
+.sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow:hidden}
+.sidebar::before{content:'';position:absolute;bottom:-80px;left:-50px;width:250px;height:250px;background:radial-gradient(circle,rgba(200,245,224,0.04) 0%,transparent 70%);pointer-events:none}
+.s-top{padding:20px 18px 16px;border-bottom:1px solid var(--border)}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.b-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--mint),var(--mint2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--bg);flex-shrink:0}
+.b-name{font-size:15px;font-weight:600;letter-spacing:-.3px}
+.b-sub{font-size:10px;color:var(--muted);font-family:var(--mono)}
+.blk-pill{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-family:var(--mono);color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 9px}
+.blink-dot{width:5px;height:5px;border-radius:50%;background:var(--mint2);animation:bl 2s infinite;flex-shrink:0}
+@keyframes bl{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(126,232,192,.4)}50%{opacity:.5;box-shadow:0 0 0 4px rgba(126,232,192,0)}}
+.nav{flex:1;padding:8px 10px;overflow-y:auto}
+.nav::-webkit-scrollbar{width:0}
+.ng-lbl{font-size:10px;font-family:var(--mono);color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;padding:10px 8px 4px;opacity:.6}
+.nb{width:100%;display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:8px;border:none;background:none;font-family:var(--font);font-size:13px;font-weight:400;color:var(--muted);cursor:pointer;text-align:left;transition:all .2s;position:relative;overflow:hidden}
+.nb::before{content:'';position:absolute;inset:0;background:var(--mint-dim);opacity:0;transition:opacity .2s;border-radius:8px}
+.nb:hover{color:var(--text)}.nb:hover::before{opacity:1}
+.nb.on{color:var(--mint);font-weight:500}.nb.on::before{opacity:1}
+.nb.on .ni{color:var(--mint);opacity:1}
+.ni{width:15px;height:15px;flex-shrink:0;opacity:.45;transition:opacity .2s;position:relative;z-index:1}
+.nb:hover .ni{opacity:1}
+.nt{position:relative;z-index:1}
+.nx{margin-left:auto;font-size:10px;opacity:.4;position:relative;z-index:1}
+.nbadge{margin-left:auto;font-size:9px;font-family:var(--mono);padding:2px 6px;border-radius:10px;background:var(--mint-dim2);color:var(--mint);border:1px solid rgba(200,245,224,.2);position:relative;z-index:1}
+.s-bot{padding:14px 14px;border-top:1px solid var(--border)}
+.ag-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;position:relative;overflow:hidden}
+.ag-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--mint2),transparent);opacity:.35}
+.ag-row{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.ag-dot{width:7px;height:7px;border-radius:50%;background:var(--mint2);animation:bl 2s infinite;flex-shrink:0}
+.ag-name{font-size:12px;font-weight:500}
+.ag-id{font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:6px}
+.ag-rep{display:flex;align-items:center;justify-content:space-between}
+.ag-lbl{font-size:10px;color:var(--muted);font-family:var(--mono)}
+.ag-val{font-size:13px;font-weight:600;color:var(--mint);font-family:var(--mono)}
+
+/* MAIN */
+.main{display:flex;flex-direction:column}
+.topbar{background:rgba(10,14,15,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:11px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.pg-title{font-size:14px;font-weight:500;letter-spacing:-.2px}
+.pg-sub{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:1px}
+.tr{display:flex;align-items:center;gap:8px}
+.w-pill{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:7px;border:1px solid var(--border2);font-size:11px;font-family:var(--mono);background:var(--surface2);color:var(--muted)}
+.w-dot{width:5px;height:5px;border-radius:50%;background:var(--muted);transition:background .3s;flex-shrink:0}
+.w-dot.on{background:var(--mint2);box-shadow:0 0 5px rgba(126,232,192,.5)}
+.btn{padding:6px 13px;border-radius:7px;font-family:var(--font);font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:var(--text);transition:all .2s}
+.btn:hover{border-color:var(--mint);color:var(--mint)}
+.btn-mint{background:var(--mint);color:var(--bg);border-color:var(--mint);font-weight:600}
+.btn-mint:hover{background:var(--mint2);border-color:var(--mint2);color:var(--bg)}
+.btn-sm{padding:5px 10px;font-size:11px}
+
+.content{padding:20px 24px;flex:1}
+.page{display:none;animation:fi .25s ease}
+.page.on{display:block}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+/* STATS BAR */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative;overflow:hidden;transition:all .25s;cursor:default}
+.stat:hover{border-color:var(--border2);transform:translateY(-1px)}
+.stat::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--mint2),transparent);opacity:0;transition:opacity .25s}
+.stat:hover::after{opacity:.4}
+.sl{font-size:10px;color:var(--muted);font-family:var(--mono);margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px}
+.sv{font-size:20px;font-weight:700;letter-spacing:-.5px;line-height:1}
+.sv.mo{font-family:var(--mono);font-size:17px}
+.ss{font-size:10px;color:var(--muted);margin-top:5px;font-family:var(--mono)}
+.ss.up{color:var(--mint2)}
+.ss.li{color:var(--mint2);display:flex;align-items:center;gap:4px}
+.ss.li::before{content:'';width:4px;height:4px;border-radius:50%;background:var(--mint2);flex-shrink:0;animation:bl 2s infinite}
+
+/* CARD */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .25s}
+.card:hover{border-color:var(--border2)}
+.ch{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.ct{font-size:12px;font-weight:500}
+.badge{font-size:9px;font-family:var(--mono);padding:2px 7px;border-radius:4px;letter-spacing:.3px}
+.bm{background:var(--mint-dim2);color:var(--mint);border:1px solid rgba(200,245,224,.2)}
+.bb{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(77,166,255,.2)}
+.bd{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+.blv{background:var(--mint-dim2);color:var(--mint2);border:1px solid rgba(126,232,192,.2);display:flex;align-items:center;gap:4px}
+.blv::before{content:'';width:4px;height:4px;border-radius:50%;background:var(--mint2);animation:bl 2s infinite}
+
+/* DASHBOARD LAYOUT */
+.dash-top{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.dash-bot{display:grid;grid-template-columns:1fr 300px;gap:14px}
+
+/* FORM */
+.fb{padding:14px}
+.fl{font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;display:block}
+.fi{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:8px 11px;font-family:var(--mono);font-size:12px;color:var(--text);outline:none;transition:all .2s}
+.fi:focus{border-color:var(--mint);background:var(--surface3)}
+.fi::placeholder{color:var(--muted)}
+.frow{margin-bottom:12px}
+.arow{display:grid;grid-template-columns:1fr auto;gap:6px}
+.utag{padding:8px 11px;border-radius:7px;border:1px solid rgba(200,245,224,.2);background:var(--mint-dim);color:var(--mint);font-family:var(--mono);font-size:11px;font-weight:500;display:flex;align-items:center}
+.rtabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:12px}
+.rtab{padding:7px 10px;border-radius:7px;border:1px solid var(--border2);background:var(--surface2);font-size:11px;font-family:var(--mono);color:var(--muted);cursor:pointer;text-align:center;transition:all .2s}
+.rtab:hover{color:var(--text);border-color:var(--border2)}
+.rtab.on{border-color:var(--mint);background:var(--mint-dim2);color:var(--mint);font-weight:500}
+.fee-bar{display:flex;justify-content:space-between;font-size:10px;font-family:var(--mono);color:var(--muted);padding:6px 10px;background:var(--surface2);border-radius:7px;border:1px solid var(--border);margin-bottom:12px}
+.famt{color:var(--mint);font-weight:500}
+.sbtn{width:100%;padding:10px;background:linear-gradient(135deg,var(--mint),var(--mint2));color:var(--bg);border:none;border-radius:8px;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.sbtn::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.1),transparent);opacity:0;transition:opacity .2s}
+.sbtn:hover::after{opacity:1}
+.sbtn:hover{transform:translateY(-1px);box-shadow:0 4px 18px rgba(200,245,224,.18)}
+.sbtn:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none}
+.tst{padding:8px 11px;border-radius:7px;font-size:11px;font-family:var(--mono);margin-top:9px;display:none;animation:fi .2s ease}
+.tst.p{background:var(--blue-dim);border:1px solid rgba(77,166,255,.2);color:var(--blue);display:block}
+.tst.ok{background:var(--mint-dim2);border:1px solid rgba(200,245,224,.2);color:var(--mint);display:block}
+.tst.er{background:var(--orange-dim);border:1px solid rgba(255,107,53,.2);color:var(--orange);display:block}
+.spin{display:inline-block;width:10px;height:10px;border:1.5px solid rgba(77,166,255,.3);border-top-color:var(--blue);border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle;margin-right:5px}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* TX */
+.txr{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;padding:11px 16px;border-bottom:1px solid var(--border);transition:background .15s;animation:si .3s ease}
+@keyframes si{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
+.txr:hover{background:var(--surface2)}.txr:last-child{border-bottom:none}
+.ti{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.to{background:var(--mint-dim);color:var(--mint)}.ta{background:var(--orange-dim);color:var(--orange)}.tc{background:var(--blue-dim);color:var(--blue)}
+.tn{font-size:12px;font-weight:500}.ts{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+.tam{font-size:12px;font-weight:600;font-family:var(--mono);color:var(--orange);text-align:right}
+.thl{font-size:9px;color:var(--blue);font-family:var(--mono);text-decoration:none;display:block;text-align:right;margin-top:2px;opacity:.7;transition:opacity .2s}
+.thl:hover{opacity:1;text-decoration:underline}
+
+/* REP */
+.rb{padding:14px}
+.rt{display:flex;align-items:center;justify-content:center;margin-bottom:14px;position:relative}
+.rc{position:absolute;text-align:center}
+.rn{font-size:28px;font-weight:700;color:var(--mint);letter-spacing:-1px;font-family:var(--mono)}
+.rl{font-size:9px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px}
+.br{margin-bottom:9px}
+.bm2{display:flex;justify-content:space-between;font-size:10px;margin-bottom:4px}
+.bk{color:var(--muted);font-family:var(--mono)}.bp{font-weight:500;color:var(--text);font-family:var(--mono)}
+.bt{height:2px;background:var(--surface3);border-radius:2px;overflow:hidden}
+.bf{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--mint2),var(--mint));transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+.ob{background:var(--surface2);border-radius:7px;padding:9px;margin-top:10px;border:1px solid var(--border)}
+.ol{font-size:9px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.ov{font-size:10px;font-family:var(--mono)}
+.ook{font-size:10px;color:var(--mint2);font-family:var(--mono);margin-top:2px;display:flex;align-items:center;gap:4px}
+.ook::before{content:'';width:4px;height:4px;border-radius:50%;background:var(--mint2);flex-shrink:0}
+
+/* INFO */
+.igrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.ir{display:flex;justify-content:space-between;align-items:center;padding:8px 16px;border-bottom:1px solid var(--border);transition:background .15s}
+.ir:hover{background:var(--surface2)}.ir:last-child{border-bottom:none}
+.ik{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.iv{font-size:11px;font-family:var(--mono);font-weight:500;max-width:175px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tags{display:flex;flex-wrap:wrap;gap:5px;padding:12px 14px}
+.tag{padding:3px 9px;border-radius:20px;font-size:10px;font-family:var(--mono);background:var(--surface2);border:1px solid var(--border);color:var(--muted);transition:all .2s;cursor:default}
+.tag:hover{border-color:var(--mint);color:var(--mint);background:var(--mint-dim)}
+
+/* EMPTY */
+.emp{padding:28px 14px;text-align:center;color:var(--muted);font-size:11px;font-family:var(--mono)}
+.emp-i{font-size:20px;margin-bottom:7px;opacity:.3}
+
+/* CCTP INFO */
+.ibox{background:var(--blue-dim);border:1px solid rgba(77,166,255,.2);border-radius:7px;padding:9px 11px;font-size:11px;font-family:var(--mono);color:var(--blue);margin-bottom:12px;line-height:1.6}
+
+/* TOAST */
+.toast{position:fixed;bottom:18px;right:18px;padding:9px 14px;border-radius:8px;font-size:11px;font-family:var(--mono);z-index:999;transform:translateY(50px);opacity:0;transition:all .25s;max-width:270px;border:1px solid}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{background:var(--surface2);border-color:rgba(126,232,192,.3);color:var(--mint2)}
+.toast.er{background:var(--surface2);border-color:rgba(255,107,53,.3);color:var(--orange)}
+
+select.fi option{background:var(--surface2)}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+<div class="shell">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="s-top">
+    <div class="brand">
+      <div class="b-icon">PF</div>
+      <div><div class="b-name">PayFlow</div><div class="b-sub">built on Arc</div></div>
+    </div>
+    <div class="blk-pill"><span class="blink-dot"></span><span id="blk">connecting...</span></div>
+  </div>
+  <nav class="nav">
+    <div class="ng-lbl">Main</div>
+    <button class="nb on" onclick="go('dash',this)">
+      <svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>
+      <span class="nt">Dashboard</span>
+    </button>
+    <button class="nb" onclick="go('txs',this)">
+      <svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h8M2 12h5"/></svg>
+      <span class="nt">Transactions</span>
+    </button>
+    <div class="ng-lbl">Agent</div>
+    <button class="nb" onclick="go('id',this)">
+      <svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5.5" r="2.5"/><path d="M2 14c0-3.314 2.686-6 6-6s6 2.686 6 6"/></svg>
+      <span class="nt">Identity</span><span class="nbadge">ERC-8004</span>
+    </button>
+    <button class="nb" onclick="go('rep',this)">
+      <svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1.5l1.8 3.6 4 .6-2.9 2.8.7 4-3.6-1.9-3.6 1.9.7-4L2.2 5.7l4-.6z"/></svg>
+      <span class="nt">Reputation</span>
+    </button>
+    <div class="ng-lbl">Dev</div>
+    <button class="nb" onclick="window.open('https://testnet.arcscan.app','_blank')">
+      <svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2H2v12h12v-4M10 2h4v4M14 2L8 8"/></svg>
+      <span class="nt">Explorer</span><span class="nx">↗</span>
+    </button>
+    <button class="nb" onclick="window.open('https://faucet.circle.com','_blank')">
+      <svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v8M5 7l3 3 3-3M3 13h10"/></svg>
+      <span class="nt">Get Testnet USDC</span><span class="nx">↗</span>
+    </button>
+  </nav>
+  <div class="s-bot">
+    <div class="ag-card">
+      <div class="ag-row"><div class="ag-dot"></div><div class="ag-name">PayFlow Agent v1</div></div>
+      <div class="ag-id" id="sb-id">Agent #479 · ERC-8004</div>
+      <div class="ag-rep"><span class="ag-lbl">Reputation</span><span class="ag-val" id="sb-rep">94/100</span></div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div><div class="pg-title" id="pg-t">Dashboard</div><div class="pg-sub" id="pg-s">Send payments · Bridge USDC · Track agent</div></div>
+    <div class="tr">
+      <button class="btn btn-sm" onclick="refreshStats()">↻</button>
+      <div class="w-pill"><div class="w-dot" id="wd"></div><span id="wl">Not connected</span></div>
+      <button class="btn btn-mint btn-sm" id="wb" onclick="connectWallet()">Connect Wallet</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="page on" id="page-dash">
+
+      <!-- contract bar (hidden once loaded) -->
+      <div id="cbar" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;gap:8px;align-items:center">
+        <input class="fi" id="ri" placeholder="Paste PaymentRouter address (0x...) — one-time setup" style="font-size:11px">
+        <button class="btn btn-mint btn-sm" onclick="loadContract()">Load</button>
+      </div>
+
+      <!-- stats -->
+      <div class="stats">
+        <div class="stat"><div class="sl">Total Volume</div><div class="sv mo" id="sv">$0.00</div><div class="ss up">USDC on Arc</div></div>
+        <div class="stat"><div class="sl">Transactions</div><div class="sv" id="st2">0</div><div class="ss li">Arc Testnet</div></div>
+        <div class="stat"><div class="sl">Wallet Balance</div><div class="sv mo" id="sbal">—</div><div class="ss">~0.006 USDC/tx</div></div>
+        <div class="stat"><div class="sl">Success Rate</div><div class="sv" id="sr">0%</div><div class="ss up">ERC-8004 rep</div></div>
+      </div>
+
+      <!-- SEND + CROSSCHAIN side by side -->
+      <div class="dash-top">
+
+        <!-- SEND PAYMENT -->
+        <div class="card">
+          <div class="ch"><div class="ct">Send Payment</div><span class="badge bm">Arc Native</span></div>
+          <div class="fb">
+            <div class="frow"><label class="fl">Recipient Address</label><input class="fi" id="s-to" placeholder="0x..." type="text"></div>
+            <div class="frow"><label class="fl">Amount (USDC)</label>
+              <div class="arow"><input class="fi" id="s-amt" type="number" placeholder="0.00" min="0" step="0.01" oninput="calcFee()"><div class="utag">USDC</div></div>
+            </div>
+            <div class="frow"><label class="fl">Memo (optional)</label><input class="fi" id="s-memo" placeholder="ref..."></div>
+            <div class="frow"><label class="fl">Route</label>
+              <div class="rtabs">
+                <div class="rtab on" data-r="direct" onclick="pr(this)">Arc Direct</div>
+                <div class="rtab" data-r="agent" onclick="pr(this)">Agent Route</div>
+              </div>
+            </div>
+            <div class="fee-bar"><span>Fee (0.1%)</span><span class="famt" id="fv">~0.0000 USDC</span></div>
+            <button class="sbtn" id="sbtn" onclick="doSend()">Send via PayFlow →</button>
+            <div class="tst" id="sst"></div>
+          </div>
+        </div>
+
+        <!-- CROSSCHAIN -->
+        <div class="card">
+          <div class="ch"><div class="ct">Crosschain Bridge</div><span class="badge bb">Circle CCTP</span></div>
+          <div class="fb">
+            <div class="frow"><label class="fl">Destination Chain</label>
+              <select class="fi" id="dc" style="appearance:none">
+                <option value="0">Ethereum (Domain 0)</option>
+                <option value="1">Avalanche (Domain 1)</option>
+                <option value="2">OP Mainnet (Domain 2)</option>
+                <option value="3">Arbitrum One (Domain 3)</option>
+                <option value="6">Base (Domain 6)</option>
+                <option value="7">Polygon PoS (Domain 7)</option>
+              </select>
+            </div>
+            <div class="frow"><label class="fl">Recipient (on destination)</label><input class="fi" id="c-to" placeholder="0x..."></div>
+            <div class="frow"><label class="fl">Amount (USDC)</label>
+              <div class="arow"><input class="fi" id="c-amt" type="number" placeholder="0.00" min="0" step="0.01"><div class="utag">USDC</div></div>
+            </div>
+            <div class="ibox">ⓘ USDC burned on Arc → minted on destination via Circle CCTP V2. ~2 min settlement.</div>
+            <button class="sbtn" onclick="doCross()">Bridge via CCTP →</button>
+            <div class="tst" id="cst"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TX LIST + REP side by side -->
+      <div class="dash-bot">
+        <div class="card">
+          <div class="ch"><div class="ct">Recent Transactions</div><span class="badge blv" id="txbadge">Live</span></div>
+          <div id="txlist"><div class="emp"><div class="emp-i">◎</div>No transactions yet</div></div>
+        </div>
+        <div class="card">
+          <div class="ch"><div class="ct">Agent Reputation</div><span class="badge bm">ERC-8004</span></div>
+          <div class="rb">
+            <div class="rt">
+              <svg width="100" height="100" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="6"/>
+                <circle id="rring" cx="50" cy="50" r="42" fill="none" stroke="url(#g1)" stroke-width="6"
+                  stroke-dasharray="264" stroke-dashoffset="26.4" stroke-linecap="round"
+                  transform="rotate(-90 50 50)" style="transition:stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1)"/>
+                <defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#7ee8c0"/><stop offset="100%" stop-color="#c8f5e0"/></linearGradient></defs>
+              </svg>
+              <div class="rc"><div class="rn" id="rnum">94</div><div class="rl">Score</div></div>
+            </div>
+            <div class="br"><div class="bm2"><span class="bk">tx_success</span><span class="bp" id="b1">0%</span></div><div class="bt"><div class="bf" id="bf1" style="width:0%"></div></div></div>
+            <div class="br"><div class="bm2"><span class="bk">routing_eff</span><span class="bp" id="b2">91%</span></div><div class="bt"><div class="bf" id="bf2" style="width:91%"></div></div></div>
+            <div class="br"><div class="bm2"><span class="bk">kyc_valid</span><span class="bp" id="b3">100%</span></div><div class="bt"><div class="bf" id="bf3" style="width:100%"></div></div></div>
+            <div class="br"><div class="bm2"><span class="bk">volume</span><span class="bp" id="b4">0%</span></div><div class="bt"><div class="bf" id="bf4" style="width:0%"></div></div></div>
+            <div class="ob">
+              <div class="ol">Identity Registry</div>
+              <div class="ov">0x8004A818...BD9e</div>
+              <div class="ook" id="aok">Registered · Agent #479</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSACTIONS PAGE -->
+    <div class="page" id="page-txs">
+      <div class="card">
+        <div class="ch"><div class="ct">All Transactions</div><span class="badge blv" id="txbadge2">Live</span></div>
+        <div id="txlist2"><div class="emp"><div class="emp-i">◎</div>Load contract on Dashboard to see transactions</div></div>
+      </div>
+    </div>
+
+    <!-- IDENTITY PAGE -->
+    <div class="page" id="page-id">
+      <div class="igrid">
+        <div class="card">
+          <div class="ch"><div class="ct">Agent Identity</div><span class="badge bb">ERC-8004</span></div>
+          <div>
+            <div class="ir"><span class="ik">Agent ID</span><span class="iv">#479</span></div>
+            <div class="ir"><span class="ik">Standard</span><span class="iv">ERC-8004</span></div>
+            <div class="ir"><span class="ik">Network</span><span class="iv">Arc Testnet</span></div>
+            <div class="ir"><span class="ik">Chain ID</span><span class="iv">5042002</span></div>
+            <div class="ir"><span class="ik">Owner</span><span class="iv">0x9a46...3892</span></div>
+            <div class="ir"><span class="ik">KYC</span><span class="iv" style="color:var(--mint2)">✓ Verified</span></div>
+            <div class="ir"><span class="ik">Registered</span><span class="iv">2026-03-22</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch"><div class="ct">Capabilities</div></div>
+          <div class="tags">
+            <span class="tag">direct_payment</span><span class="tag">crosschain_usdc</span>
+            <span class="tag">reputation_tracking</span><span class="tag">fee_management</span>
+            <span class="tag">kyc_compliance</span><span class="tag">erc-8004</span><span class="tag">arc-testnet</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch"><div class="ct">Contract Addresses</div></div>
+          <div>
+            <div class="ir"><span class="ik">IdentityRegistry</span><span class="iv">0x8004A818...BD9e</span></div>
+            <div class="ir"><span class="ik">ReputationRegistry</span><span class="iv">0x8004B663...8713</span></div>
+            <div class="ir"><span class="ik">ValidationRegistry</span><span class="iv">0x8004Cb1B...4272</span></div>
+            <div class="ir"><span class="ik">PaymentRouter</span><span class="iv">0xda7C...7Fb9</span></div>
+            <div class="ir"><span class="ik">USDC</span><span class="iv">0x3600...0000</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch"><div class="ct">Metadata</div></div>
+          <div>
+            <div class="ir"><span class="ik">Name</span><span class="iv">PayFlow Agent v1.0</span></div>
+            <div class="ir"><span class="ik">Type</span><span class="iv">payment_router</span></div>
+            <div class="ir"><span class="ik">Version</span><span class="iv">1.0.0</span></div>
+            <div class="ir"><span class="ik">IPFS</span><span class="iv">bafkrei...soei</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPUTATION PAGE -->
+    <div class="page" id="page-rep">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="card">
+          <div class="ch"><div class="ct">Onchain Reputation</div><span class="badge blv">Live</span></div>
+          <div class="rb">
+            <div class="rt">
+              <svg width="130" height="130" viewBox="0 0 130 130">
+                <circle cx="65" cy="65" r="54" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="8"/>
+                <circle id="rring2" cx="65" cy="65" r="54" fill="none" stroke="url(#g2)" stroke-width="8"
+                  stroke-dasharray="339" stroke-dashoffset="33.9" stroke-linecap="round"
+                  transform="rotate(-90 65 65)" style="transition:stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1)"/>
+                <defs><linearGradient id="g2" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#7ee8c0"/><stop offset="100%" stop-color="#c8f5e0"/></linearGradient></defs>
+              </svg>
+              <div class="rc"><div class="rn" id="rnum2" style="font-size:34px">94</div><div class="rl">out of 100</div></div>
+            </div>
+            <div class="br"><div class="bm2"><span class="bk">tx_success_rate</span><span class="bp" id="r1">0%</span></div><div class="bt"><div class="bf" id="rf1" style="width:0%"></div></div></div>
+            <div class="br"><div class="bm2"><span class="bk">routing_efficiency</span><span class="bp" id="r2">91%</span></div><div class="bt"><div class="bf" id="rf2" style="width:91%"></div></div></div>
+            <div class="br"><div class="bm2"><span class="bk">kyc_validation</span><span class="bp" id="r3">100%</span></div><div class="bt"><div class="bf" id="rf3" style="width:100%"></div></div></div>
+            <div class="br"><div class="bm2"><span class="bk">volume_score</span><span class="bp" id="r4">0%</span></div><div class="bt"><div class="bf" id="rf4" style="width:0%"></div></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch"><div class="ct">Attestations</div><span class="badge bd">ERC-8004</span></div>
+          <div>
+            <div class="txr"><div class="ti to">✓</div><div><div class="tn">payment_routing_ready</div><div class="ts">score: 90 · ReputationRegistry</div></div><div style="font-size:9px;color:var(--muted);font-family:var(--mono)">2026-03-22</div></div>
+            <div class="txr"><div class="ti to">✓</div><div><div class="tn">kyc_compliance_enabled</div><div class="ts">score: 95 · ReputationRegistry</div></div><div style="font-size:9px;color:var(--muted);font-family:var(--mono)">2026-03-22</div></div>
+            <div class="txr"><div class="ti tc">✓</div><div><div class="tn">kyc_verified</div><div class="ts">ValidationRegistry · response: 100</div></div><div style="font-size:9px;color:var(--muted);font-family:var(--mono)">2026-03-22</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const RPC="https://rpc.testnet.arc.network";
+const USDC_ADDR="0x3600000000000000000000000000000000000000";
+const RABI=["function sendPayment(address,uint256,string) returns (bytes32)","function agentRoute(address,address,uint256) returns (bytes32)","function sendCrosschain(uint256,uint32,bytes32,uint256) returns (bytes32)","function totalPayments() view returns (uint256)","function totalVolume() view returns (uint256)","function successCount() view returns (uint256)","function agentId() view returns (uint256)","event PaymentSent(bytes32 indexed,address indexed,address indexed,uint256,uint256,uint8)"];
+const UABI=["function balanceOf(address) view returns (uint256)","function approve(address,uint256) returns (bool)"];
+
+// Auto-save contract address
+const SAVED_KEY="payflow_router_addr";
+let provider,signer,router,usdc,wallet,routerAddr,selRoute="direct";
+
+const pgInfo={dash:["Dashboard","Send · Bridge · Track agent"],txs:["Transactions","Full transaction history"],id:["Agent Identity","ERC-8004 Standard"],rep:["Agent Reputation","Onchain attestations"]};
+
+function go(id,btn){
+  document.querySelectorAll(".page,.nb").forEach(el=>el.classList.remove("on"));
+  document.getElementById("page-"+id).classList.add("on");
+  btn.classList.add("on");
+  const[t,s]=pgInfo[id]||[id,""];
+  document.getElementById("pg-t").textContent=t;
+  document.getElementById("pg-s").textContent=s;
+}
+
+async function connectWallet(){
+  if(!window.ethereum){toast("MetaMask not found","er");return;}
+  try{
+    provider=new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts",[]);
+    try{await window.ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x133512"}]});}
+    catch(e){if(e.code===4902)await window.ethereum.request({method:"wallet_addEthereumChain",params:[{chainId:"0x133512",chainName:"Arc Testnet",nativeCurrency:{name:"USDC",symbol:"USDC",decimals:18},rpcUrls:[RPC],blockExplorerUrls:["https://testnet.arcscan.app"]}]});}
+    signer=await provider.getSigner();
+    wallet=await signer.getAddress();
+    document.getElementById("wl").textContent=wallet.slice(0,6)+"..."+wallet.slice(-4);
+    document.getElementById("wd").classList.add("on");
+    document.getElementById("wb").textContent="Connected ✓";
+    usdc=new ethers.Contract(USDC_ADDR,UABI,signer);
+    await refreshBal();
+    toast("Connected to Arc Testnet ✓","ok");
+    // Auto-load saved contract
+    const saved=localStorage.getItem(SAVED_KEY);
+    if(saved){document.getElementById("ri").value=saved;await _loadContract(saved);}
+  }catch(e){toast("Failed: "+e.message,"er");}
+}
+
+async function loadContract(){
+  const v=document.getElementById("ri").value.trim();
+  if(!v||!v.startsWith("0x")){toast("Enter valid 0x address","er");return;}
+  localStorage.setItem(SAVED_KEY,v);
+  await _loadContract(v);
+}
+
+async function _loadContract(addr){
+  routerAddr=addr;
+  const p=signer?provider:new ethers.JsonRpcProvider(RPC);
+  router=new ethers.Contract(addr,RABI,signer||p);
+  // Hide contract bar
+  document.getElementById("cbar").style.display="none";
+  toast("Contract loaded ✓","ok");
+  await refreshStats();
+  await loadEvents();
+}
+
+async function refreshBal(){
+  if(!usdc||!wallet)return;
+  try{const b=await usdc.balanceOf(wallet);document.getElementById("sbal").textContent="$"+(Number(b)/1e6).toFixed(2);}catch{}
+}
+
+async function refreshStats(){
+  if(!router)return;
+  try{
+    const[tp,tv,sc,aid]=await Promise.all([router.totalPayments(),router.totalVolume(),router.successCount(),router.agentId()]);
+    const txs=Number(tp),vol=Number(tv),rate=txs>0?Math.round(Number(sc)*100/txs):0,rep=txs>0?Math.min(99,Math.floor(rate*.97+3)):94;
+    document.getElementById("st2").textContent=txs;
+    document.getElementById("sv").textContent="$"+(vol/1e6).toFixed(2);
+    document.getElementById("sr").textContent=rate+"%";
+    setRep(rep,rate,txs);
+    await refreshBal();
+  }catch(e){toast("Error: "+e.message,"er");}
+}
+
+function setRep(score,rate,txs){
+  ["rnum","rnum2"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=score;});
+  document.getElementById("sb-rep").textContent=score+"/100";
+  const o1=264-(264*score/100),o2=339-(339*score/100);
+  document.getElementById("rring").setAttribute("stroke-dashoffset",o1.toFixed(1));
+  document.getElementById("rring2").setAttribute("stroke-dashoffset",o2.toFixed(1));
+  const s=Math.min(100,rate),e=Math.max(70,Math.min(100,score-3)),k=txs>0?100:0,v=Math.min(100,txs*5);
+  [["b1","bf1","r1","rf1",s],["b2","bf2","r2","rf2",e],["b3","bf3","r3","rf3",k],["b4","bf4","r4","rf4",v]].forEach(([lb,fb,lr,fr,val])=>{
+    [lb,lr].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=val+"%";});
+    [fb,fr].forEach(id=>{const el=document.getElementById(id);if(el)el.style.width=val+"%";});
+  });
+}
+
+async function loadEvents(){
+  if(!router)return;
+  try{
+    const evs=await router.queryFilter(router.filters.PaymentSent(),-2000);
+    ["txlist","txlist2"].forEach(id=>{
+      const el=document.getElementById(id);el.innerHTML="";
+      if(!evs.length){el.innerHTML='<div class="emp"><div class="emp-i">◎</div>No transactions yet — send one!</div>';return;}
+      evs.slice(-10).reverse().forEach(e=>addTx(e,el));
+    });
+    const cnt="Live · "+evs.length+" txs";
+    ["txbadge","txbadge2"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=cnt;});
+  }catch{}
+
+  router.on("PaymentSent",(pid,sender,rec,amt,fee,pt,ev)=>{
+    ["txlist","txlist2"].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el.querySelector(".emp"))el.innerHTML="";
+      addTx(ev,el,true);
+    });
+    refreshStats();
+  });
+}
+
+function addTx(ev,cont,pre=false){
+  // Use positional args to handle both named and unnamed arg access
+  const args=ev.args||[];
+  const sender=String(args[1]||args.sender||"0x000000");
+  const amount=BigInt(args[3]||args.amount||0);
+  const fee=BigInt(args[4]||args.fee||0);
+  const pType=Number(args[5]||args.pType||0);
+  const am=(Number(amount)/1e6).toFixed(2);
+  const fe=(Number(fee)/1e6).toFixed(4);
+  const m={0:{l:"Direct Payment",c:"to",i:"↗"},1:{l:"Crosschain",c:"tc",i:"⇢"},2:{l:"Agent Routed",c:"ta",i:"⚡"}};
+  const t=m[pType]||m[0],h=ev.transactionHash||"";
+  const el=document.createElement("div");el.className="txr";
+  el.innerHTML=`<div class="ti ${t.c}">${t.i}</div><div><div class="tn">${t.l}</div><div class="ts">${sender.slice(0,10)}... · fee: ${fe} USDC</div></div><div><div class="tam">-${am} USDC</div>${h?`<a class="thl" href="https://testnet.arcscan.app/tx/${h}" target="_blank">${h.slice(0,12)}...</a>`:""}</div>`;
+  if(pre&&cont.firstChild)cont.insertBefore(el,cont.firstChild);else cont.appendChild(el);
+}
+
+function pr(el){document.querySelectorAll(".rtab").forEach(t=>t.classList.remove("on"));el.classList.add("on");selRoute=el.dataset.r;}
+function calcFee(){const a=parseFloat(document.getElementById("s-amt").value)||0;document.getElementById("fv").textContent="~"+(a*.001).toFixed(4)+" USDC";}
+
+async function doSend(){
+  if(!signer){toast("Connect wallet first","er");return;}
+  if(!router){toast("Load contract first","er");return;}
+  const to=document.getElementById("s-to").value.trim(),ar=parseFloat(document.getElementById("s-amt").value),memo=document.getElementById("s-memo").value.trim();
+  if(!to||!to.startsWith("0x")){toast("Enter valid recipient","er");return;}
+  if(!ar||ar<=0){toast("Enter valid amount","er");return;}
+  const amt=BigInt(Math.round(ar*1e6)),st=document.getElementById("sst"),btn=document.getElementById("sbtn");
+  try{
+    btn.disabled=true;st.className="tst p";st.innerHTML='<span class="spin"></span>Approving USDC...';
+    await(await usdc.approve(routerAddr,amt)).wait();
+    st.innerHTML='<span class="spin"></span>Sending...';
+    const tx=selRoute==="agent"?await router.agentRoute(wallet,to,amt):await router.sendPayment(to,amt,memo||"payflow");
+    st.innerHTML=`<span class="spin"></span>Confirming... <a class="thl" href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">${tx.hash.slice(0,14)}...</a>`;
+    const rc=await tx.wait();
+    st.className="tst ok";st.innerHTML=`✓ Sent! <a class="thl" href="https://testnet.arcscan.app/tx/${rc.hash}" target="_blank">View on Explorer →</a>`;
+    toast("Payment confirmed ✓","ok");
+    document.getElementById("s-to").value="";document.getElementById("s-amt").value="";document.getElementById("s-memo").value="";calcFee();
+  }catch(e){st.className="tst er";st.textContent="✗ "+(e.reason||e.message||"Failed");toast("Failed","er");}
+  finally{btn.disabled=false;}
+}
+
+async function doCross(){
+  if(!signer){toast("Connect wallet first","er");return;}
+  const to=document.getElementById("c-to").value.trim(),ar=parseFloat(document.getElementById("c-amt").value),dom=parseInt(document.getElementById("dc").value);
+  if(!to||!to.startsWith("0x")){toast("Enter valid recipient","er");return;}
+  if(!ar||ar<=0){toast("Enter valid amount","er");return;}
+  const CCTP="0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA";
+  const CCTP_ABI=["function depositForBurn(uint256 amount,uint32 destinationDomain,bytes32 mintRecipient,address burnToken,bytes32 destinationCaller,uint256 maxFee,uint32 minFinalityThreshold) returns (uint64)"];
+  const amt=BigInt(Math.round(ar*1e6));
+  const mr="0x"+to.replace("0x","").padStart(64,"0");
+  const st=document.getElementById("cst");
+  try{
+    st.className="tst p";st.innerHTML='<span class="spin"></span>Approving USDC for CCTP...';
+    // Approve CCTP messenger directly
+    await(await usdc.approve(CCTP,amt)).wait();
+    st.innerHTML='<span class="spin"></span>Burning USDC on Arc → bridging...';
+    const cctp=new ethers.Contract(CCTP,CCTP_ABI,signer);
+    const tx=await cctp.depositForBurn(amt,dom,mr,USDC_ADDR,"0x"+"0".repeat(64),0,1000);
+    const rc=await tx.wait();
+    st.className="tst ok";st.innerHTML=`✓ Bridge initiated! USDC will arrive on destination in ~2 min. <a class="thl" href="https://testnet.arcscan.app/tx/${rc.hash}" target="_blank">View →</a>`;
+    toast("CCTP bridge started ✓","ok");
+  }catch(e){st.className="tst er";st.textContent="✗ "+(e.reason||e.message||"Failed");}
+}
+
+function toast(msg,type="ok"){const t=document.getElementById("toast");t.textContent=msg;t.className="toast "+type+" show";setTimeout(()=>t.classList.remove("show"),3000);}
+
+async function pollBlock(){
+  try{const p=new ethers.JsonRpcProvider(RPC);document.getElementById("blk").textContent="Block #"+(await p.getBlockNumber()).toLocaleString();}
+  catch{document.getElementById("blk").textContent="offline";}
+}
+
+// Auto-load on page start if saved
+window.addEventListener("load",()=>{
+  const saved=localStorage.getItem(SAVED_KEY);
+  if(saved){document.getElementById("ri").value=saved;}
+  pollBlock();
+  setInterval(pollBlock,12000);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "network": "Arc Testnet (chainId: 1315)",
+  "timestamp": "2026-03-22T03:29:55.063Z",
+  "agent": {
+    "id": "479",
+    "owner": "0x9a4631c823e405fa5c1ef7a9c886d65c270f3892",
+    "validator": "0xdbe6792ed19b30963520d5550789ce57f14db5fe",
+    "identityRegistry": "0x8004A818BFB912233c491871b3d84c89A494BD9e",
+    "reputationRegistry": "0x8004B663056A597Dffe9eCcC1965A193B7388713",
+    "validationRegistry": "0x8004Cb1BF31DAf7788923b405b754f57acEB4272",
+    "validationRequestHash": "0x77ceec4e0d877fe1455562ac562c8eb3b1d2c6bdfa97fb99674ebb24dd5062dc"
+  },
+  "contracts": {
+    "PaymentRouter": "0xda7C743A57b2478b801Ab12cDB1f0245b7817Fb9",
+    "USDC": "0x3600000000000000000000000000000000000000",
+    "CCTP_MESSENGER": "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA"
+  },
+  "explorer": "https://testnet.arcscan.app/address/0xda7C743A57b2478b801Ab12cDB1f0245b7817Fb9"
+}
