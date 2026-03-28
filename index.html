@@ -370,7 +370,7 @@ select.fi option{background:var(--surface2)}
             <div class="ir"><span class="ik">Agent ID</span><span class="iv">#479</span></div>
             <div class="ir"><span class="ik">Standard</span><span class="iv">ERC-8004</span></div>
             <div class="ir"><span class="ik">Network</span><span class="iv">Arc Testnet</span></div>
-            <div class="ir"><span class="ik">Chain ID</span><span class="iv">5053458</span></div>
+            <div class="ir"><span class="ik">Chain ID</span><span class="iv">5042002</span></div>
             <div class="ir"><span class="ik">Owner</span><span class="iv">0x9a46...3892</span></div>
             <div class="ir"><span class="ik">KYC</span><span class="iv" style="color:var(--mint2)">✓ Verified</span></div>
             <div class="ir"><span class="ik">Registered</span><span class="iv">2026-03-22</span></div>
@@ -470,8 +470,8 @@ async function connectWallet(){
   try{
     provider=new ethers.BrowserProvider(window.ethereum);
     await provider.send("eth_requestAccounts",[]);
-    try{await window.ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x4D1C12"}]});}
-    catch(e){if(e.code===4902)await window.ethereum.request({method:"wallet_addEthereumChain",params:[{chainId:"0x4D1C12",chainName:"Arc Testnet",nativeCurrency:{name:"USDC",symbol:"USDC",decimals:18},rpcUrls:[RPC],blockExplorerUrls:["https://testnet.arcscan.app"]}]});}
+    try{await window.ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x4CEF52"}]});}
+    catch(e){if(e.code===4902)await window.ethereum.request({method:"wallet_addEthereumChain",params:[{chainId:"0x4CEF52",chainName:"Arc Testnet",nativeCurrency:{name:"USDC",symbol:"USDC",decimals:18},rpcUrls:[RPC],blockExplorerUrls:["https://testnet.arcscan.app"]}]});}
     signer=await provider.getSigner();
     wallet=await signer.getAddress();
     document.getElementById("wl").textContent=wallet.slice(0,6)+"..."+wallet.slice(-4);
